@@ -1,0 +1,109 @@
+''' Begin '''
+
+1. How can you retrieve all the information from the cd.facilities table?
+
+select * from cd.facilities
+
+2. You want to print out a list of all of the facilities and their cost to members. How would you retrieve a list of only facility names and costs?
+
+select name, membercost from cd.facilities;
+
+3. How can you produce a list of facilities that charge a fee to members?
+
+select * from cd.facilities where membercost > 0;
+
+4. How can you produce a list of facilities that charge a fee to members, and that fee is less than 1/50th of the monthly maintenance cost? Return the facid, facility name, member cost, and monthly maintenance of the facilities in question.
+
+select facid, name,membercost, monthlymaintenance from cd.facilities
+where membercost > 0 and(membercost < monthlymaintenance/50.0);
+ 5. How can you produce a list of all facilities with the word 'Tennis' in their name?
+
+select * from cd.facilities where name like '%Tennis%';
+
+6. How can you retrieve the details of facilities with ID 1 and 5? Try to do it without using the OR operator.
+
+select name from cd.facilities where facid in(1,5);
+
+7. How can you produce a list of facilities, with each labelled as 'cheap' or 'expensive' depending on if their monthly maintenance cost is more than $100? Return the name and monthly maintenance of the facilities in question.
+
+select name, case when (monthlymaintenance > 100) then 'expensive'
+else 'cheap' end as cost from cd.facilities;
+
+8. How can you produce a list of members who joined after the start of September 2012? Return the memid, surname, firstname, and joindate of the members in question.
+
+select memid, surname, firstname, joindate from cd.members where joindate >='2012-09-01'
+
+9. How can you produce an ordered list of the first 10 surnames in the members table? The list must not contain duplicates.
+
+
+select distinct surname from cd.members order by surname limit 10;
+
+10. select surname from cd.members union select name from cd.facilities;
+
+11. select max(joindate) as latest from cd.members;
+
+12. select firstname, surname, joindate from cd.members where joindate = (select max(joindate) from cd.members);
+
+''' Joins and subqueries '''
+
+1. select bks.starttime from cd.bookings bks inner join cd.members mems on mems.memid = bks.memid
+where mems.firstname='David' and mems.surname='Farrell'; 
+
+2. select bks.starttime as start, facs.name as name from cd.facilities facs inner join cd.bookings bks
+on facs.facid = bks.facid where facs.name in ('Tennis Court 2','Tennis Court 1') and
+bks.starttime >= '2012-09-21' and bks.starttime < '2012-09-22' order by bks.starttime;
+
+3. select distinct recs.firstname as firstname, recs.surname as surname from cd.members mems
+inner join cd.members recs on recs.memid = mems.recommendedby order by surname, firstname; 
+
+4. select mems.firstname as memfname, mems.surname as memsname, recs.firstname as recfname, recs.surname as recsname
+from cd.members mems left outer join cd.members recs on recs.memid = mems.recommendedby
+order by memsname, memfname; 
+
+5. select distinct mems.firstname || ' ' || mems.surname as member, facs.name as facility
+from cd.members mems inner join cd.bookings bks on mems.memid = bks.memid inner join cd.facilities facs
+on bks.facid = facs.facid where facs.name in ('Tennis Court 2','Tennis Court 1')
+order by member, facility;
+
+6. select mems.firstname || ' ' || mems.surname as member, facs.name as facility, case when mems.memid = 0 then
+bks.slots*facs.guestcost else bks.slots*facs.membercost end as cost from cd.members mems                
+inner join cd.bookings bks on mems.memid = bks.memid inner join cd.facilities facs on bks.facid = facs.facid
+where bks.starttime >= '2012-09-14' and bks.starttime < '2012-09-15' and ((mems.memid = 0 and bks.slots*facs.guestcost > 30) or
+(mems.memid != 0 and bks.slots*facs.membercost > 30)) order by cost desc; 
+
+7. select distinct mems.firstname || ' ' ||  mems.surname as member,(select recs.firstname || ' ' || recs.surname as recommender 
+from cd.members recs where recs.memid = mems.recommendedby)from cd.members mems order by member; 
+
+8. select member, facility, cost from (select mems.firstname || ' ' || mems.surname as member,
+facs.name as facility, case when mems.memid = 0 then bks.slots*facs.guestcost
+else bks.slots*facs.membercost end as cost from cd.members mems inner join cd.bookings bks
+on mems.memid = bks.memid inner join cd.facilities facs on bks.facid = facs.facid where
+bks.starttime >= '2012-09-14' and bks.starttime < '2012-09-15') as bookings where cost > 30
+order by cost desc;          
+
+''' Modifying data '''
+
+1. insert into cd.facilities(facid, name, membercost, guestcost, initialoutlay, monthlymaintenance)
+values (9, 'Spa', 20, 30, 100000, 800); 
+
+2. insert into cd.facilities(facid, name, membercost, guestcost, initialoutlay, monthlymaintenance)
+values (9, 'Spa', 20, 30, 100000, 800), (10, 'Squash Court 2', 3.5, 17.5, 5000, 80); 
+
+3. insert into cd.facilities(facid, name, membercost, guestcost, initialoutlay, monthlymaintenance)
+select (select max(facid) from cd.facilities)+1, 'Spa', 20, 30, 100000, 800;       
+
+4. update cd.facilities set initialoutlay = 10000 where facid = 1;  
+
+5. update cd.facilities set membercost = 6, guestcost = 30 where facid in(0,1);
+
+6. update cd.facilities facs set membercost = (select membercost * 1.1 from cd.facilities where facid = 0),
+guestcost = (select guestcost * 1.1 from cd.facilities where facid = 0)
+where facs.facid = 1;  
+
+7. delete from cd.bookings;
+
+8. delete from cd.members where memid = 37;
+
+9. delete from cd.members where memid not in (select memid from cd.bookings); 
+
+10. 
